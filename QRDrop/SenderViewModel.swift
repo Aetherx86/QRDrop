@@ -54,7 +54,13 @@ public final class SenderViewModel {
     public var serializedStrings: [String] = []
     public var currentChunkIndex: Int = 0
     public var isPlaying: Bool = false
-    public var fps: Double = 12.0
+    public var fps: Double = 12.0 {
+        didSet {
+            if isPlaying {
+                startPlayback()
+            }
+        }
+    }
     public var loopCount: Int = 0
     
     private var playbackTask: Task<Void, Never>?

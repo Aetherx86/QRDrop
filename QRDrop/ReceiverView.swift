@@ -214,6 +214,8 @@ struct CompletedFileSheet: View {
                         Text(file.name)
                             .bold()
                             .lineLimit(1)
+                            .truncationMode(.middle)
+                            .minimumScaleFactor(0.75)
                     }
                     
                     Divider()

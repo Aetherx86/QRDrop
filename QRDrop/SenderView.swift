@@ -19,16 +19,16 @@ public struct SenderView: View {
     
     public var body: some View {
         VStack(spacing: 0) {
-            // 상단 모드 선택 (텍스트 직접 입력 vs 파일/사진 드롭 전송)
+            // 상단 서브 세그먼트 (텍스트 직접 입력 vs 모든 파일/사진 전송)
             Picker("입력 방식", selection: $viewModel.inputMode) {
                 ForEach(SenderViewModel.InputMode.allCases) { mode in
                     Text(mode.rawValue).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 10)
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+            .padding(.bottom, 8)
             
             switch viewModel.inputMode {
             case .text:
@@ -39,7 +39,7 @@ public struct SenderView: View {
         }
         .fileImporter(
             isPresented: $showFilePicker,
-            allowedContentTypes: [.item, .image, .data],
+            allowedContentTypes: [.item, .content, .data, .image, .pdf],
             allowsMultipleSelection: false
         ) { result in
             switch result {
@@ -70,41 +70,41 @@ public struct SenderView: View {
     private var directTextInputView: some View {
         ViewThatFits(in: .horizontal) {
             // 가로가 넓은 Mac / iPad 화면: 좌우 배치
-            HStack(spacing: 20) {
+            HStack(spacing: 16) {
                 textInputArea
                     .frame(minWidth: 260)
-                    .padding(.leading, 20)
-                    .padding(.bottom, 16)
+                    .padding(.leading, 16)
+                    .padding(.bottom, 12)
                 
                 qrCodePreviewArea(maxSize: 320)
                     .frame(width: 320)
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 16)
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 12)
             }
             
             // 세로가 좁은 iPhone 화면: 상하 스크롤 배치
             ScrollView {
-                VStack(spacing: 18) {
+                VStack(spacing: 14) {
                     qrCodePreviewArea(maxSize: 260)
                         .frame(maxWidth: .infinity)
                     
                     textInputArea
                         .frame(minHeight: 180)
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 20)
             }
         }
     }
     
     private var textInputArea: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Label("보낼 텍스트 입력", systemImage: "pencil.line")
-                    .font(.headline)
+                    .font(.subheadline.bold())
                 Spacer()
                 Text("\(viewModel.directTextInput.count)자")
-                    .font(.caption.monospacedDigit())
+                    .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
             
@@ -123,15 +123,15 @@ public struct SenderView: View {
                     viewModel.pasteFromClipboard()
                 } label: {
                     Label("붙여넣기", systemImage: "doc.on.clipboard")
-                        .font(.caption)
+                        .font(.caption2)
                 }
                 .buttonStyle(.bordered)
                 
                 Button {
                     viewModel.directTextInput = "https://"
                 } label: {
-                    Label("링크(URL)", systemImage: "link")
-                        .font(.caption)
+                    Label("URL", systemImage: "link")
+                        .font(.caption2)
                 }
                 .buttonStyle(.bordered)
                 
@@ -141,7 +141,7 @@ public struct SenderView: View {
                     viewModel.clearDirectText()
                 } label: {
                     Text("지우기")
-                        .font(.caption)
+                        .font(.caption2)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.red)
@@ -150,7 +150,7 @@ public struct SenderView: View {
     }
     
     private func qrCodePreviewArea(maxSize: CGFloat) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(Color.white)
@@ -161,11 +161,11 @@ public struct SenderView: View {
                         .resizable()
                         .interpolation(.none)
                         .scaledToFit()
-                        .padding(18)
+                        .padding(16)
                 } else {
                     VStack(spacing: 8) {
                         Image(systemName: "keyboard")
-                            .font(.system(size: 36))
+                            .font(.system(size: 32))
                             .foregroundStyle(.secondary)
                         Text("텍스트를 입력하면\nQR 코드가 실시간 생성됩니다")
                             .font(.caption)
@@ -180,7 +180,7 @@ public struct SenderView: View {
             HStack(spacing: 6) {
                 Image(systemName: "camera.fill")
                     .foregroundStyle(.blue)
-                    .font(.caption)
+                    .font(.caption2)
                 #if os(macOS)
                 Text("아이폰 카메라로 비추면 즉시 복사됩니다")
                     .font(.caption2.bold())
@@ -213,20 +213,21 @@ public struct SenderView: View {
     // MARK: - 3. 파일 텍스트 페이지 뷰
     
     private var textPageQRView: some View {
-        VStack(spacing: 14) {
-            HStack(spacing: 12) {
+        VStack(spacing: 10) {
+            // 상단 파일 정보 바
+            HStack(spacing: 10) {
                 Image(systemName: "doc.text.fill")
-                    .font(.title2)
+                    .font(.title3)
                     .foregroundStyle(.blue)
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(viewModel.selectedFileName ?? "파일")
-                        .font(.headline)
+                        .font(.subheadline.bold())
                         .lineLimit(1)
                         .truncationMode(.middle)
                     
-                    Text("\(viewModel.formattedOriginalSize) • 기본 카메라로 즉시 복사")
-                        .font(.caption)
+                    Text("\(viewModel.formattedOriginalSize) • 텍스트 모드")
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
                 
@@ -238,39 +239,39 @@ public struct SenderView: View {
                     viewModel.currentQRImage = nil
                 } label: {
                     Label("다른 파일", systemImage: "xmark.circle.fill")
-                        .font(.subheadline)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 12)
             
             Spacer(minLength: 4)
             
             ZStack {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(Color.white)
-                    .shadow(color: .black.opacity(0.12), radius: 18, x: 0, y: 8)
+                    .shadow(color: .black.opacity(0.12), radius: 14, x: 0, y: 6)
                 
                 if let qr = viewModel.currentQRImage {
                     Image(decorative: qr, scale: 1.0)
                         .resizable()
                         .interpolation(.none)
                         .scaledToFit()
-                        .padding(24)
+                        .padding(18)
                 } else {
                     ProgressView()
                 }
             }
-            .frame(maxWidth: 380, maxHeight: 380)
+            .frame(maxWidth: 340, maxHeight: 340)
             
             Spacer(minLength: 4)
             
             if viewModel.totalPages > 1 {
-                HStack(spacing: 14) {
+                HStack(spacing: 12) {
                     Button {
                         viewModel.previousPage()
                     } label: {
@@ -281,16 +282,16 @@ public struct SenderView: View {
                     Button {
                         viewModel.toggleAutoPage()
                     } label: {
-                        HStack(spacing: 6) {
+                        HStack(spacing: 4) {
                             Image(systemName: viewModel.isAutoPagePlaying ? "pause.fill" : "play.fill")
                             Text(viewModel.isAutoPagePlaying ? "자동 넘김 중" : "일시 정지")
                         }
-                        .font(.subheadline.bold())
+                        .font(.caption.bold())
                     }
                     .buttonStyle(.borderedProminent)
                     
                     Text("\(viewModel.currentPageIndex + 1) / \(viewModel.totalPages) 페이지")
-                        .font(.system(.subheadline, design: .monospaced, weight: .bold))
+                        .font(.system(.caption, design: .monospaced, weight: .bold))
                     
                     Button {
                         viewModel.nextPage()
@@ -299,50 +300,51 @@ public struct SenderView: View {
                     }
                     .buttonStyle(.bordered)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 12)
             }
             
             VStack(spacing: 4) {
                 HStack(spacing: 6) {
                     Image(systemName: "camera.fill")
                         .foregroundStyle(.blue)
+                        .font(.caption)
                     #if os(macOS)
                     Text("아이폰 카메라를 켜서 비추세요!")
-                        .font(.headline)
+                        .font(.subheadline.bold())
                     #else
                     Text("맥 카메라를 켜서 비추세요!")
-                        .font(.headline)
+                        .font(.subheadline.bold())
                     #endif
                 }
                 Text("노란 박스 또는 우측 하단 [복사] 버튼을 누르면 내용이 바로 복사됩니다.")
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 16)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
         }
     }
     
-    // MARK: - 4. 바이너리 파일/사진 고속 애니메이션 스트림 뷰
+    // MARK: - 4. 모든 파일(사진, PDF, PPT 등) 고속 애니메이션 스트림 뷰
     
     private var binaryAnimationQRView: some View {
-        VStack(spacing: 12) {
-            // 상단 파일 정보 헤더
-            HStack(spacing: 12) {
-                Image(systemName: "photo.stack.fill")
-                    .font(.title2)
+        VStack(spacing: 10) {
+            // 상단 파일 정보 헤더 바
+            HStack(spacing: 10) {
+                Image(systemName: fileIconName(for: viewModel.selectedFileName ?? ""))
+                    .font(.title3)
                     .foregroundStyle(.purple)
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(viewModel.selectedFileName ?? "파일")
-                        .font(.headline)
+                        .font(.subheadline.bold())
                         .lineLimit(1)
                         .truncationMode(.middle)
                     
-                    Text("\(viewModel.formattedOriginalSize) • 고속 전송 중 (\(viewModel.packets.count)개 프레임)")
-                        .font(.caption)
+                    Text("\(viewModel.formattedOriginalSize) • 총 \(viewModel.packets.count)개 프레임")
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
                 
@@ -354,40 +356,40 @@ public struct SenderView: View {
                     viewModel.currentQRImage = nil
                 } label: {
                     Label("다른 파일", systemImage: "xmark.circle.fill")
-                        .font(.subheadline)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 12)
             
-            Spacer(minLength: 4)
+            Spacer(minLength: 2)
             
             // 고속 QR 코드 디스플레이 영역
             ZStack {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(Color.white)
-                    .shadow(color: .black.opacity(0.12), radius: 18, x: 0, y: 8)
+                    .shadow(color: .black.opacity(0.12), radius: 14, x: 0, y: 6)
                 
                 if let qr = viewModel.currentQRImage {
                     Image(decorative: qr, scale: 1.0)
                         .resizable()
                         .interpolation(.none)
                         .scaledToFit()
-                        .padding(22)
+                        .padding(18)
                 } else {
                     ProgressView()
                 }
             }
-            .frame(maxWidth: 380, maxHeight: 380)
+            .frame(maxWidth: 340, maxHeight: 340)
             
-            Spacer(minLength: 4)
+            Spacer(minLength: 2)
             
-            // 재생 컨트롤 및 프레임 표시부
-            HStack(spacing: 14) {
+            // 프레임 이동 및 재생 토글 바
+            HStack(spacing: 12) {
                 Button {
                     viewModel.previousFrame()
                 } label: {
@@ -398,16 +400,16 @@ public struct SenderView: View {
                 Button {
                     viewModel.togglePlayback()
                 } label: {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 4) {
                         Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                        Text(viewModel.isPlaying ? "재생 중" : "정지")
+                        Text(viewModel.isPlaying ? "자동 전송 중" : "일시 정지")
                     }
-                    .font(.subheadline.bold())
+                    .font(.caption.bold())
                 }
                 .buttonStyle(.borderedProminent)
                 
-                Text("\(viewModel.currentChunkIndex + 1) / \(max(1, viewModel.packets.count)) 프레임")
-                    .font(.system(.subheadline, design: .monospaced, weight: .bold))
+                Text("\(viewModel.currentChunkIndex + 1) / \(max(1, viewModel.packets.count))")
+                    .font(.system(.caption, design: .monospaced, weight: .bold))
                 
                 Button {
                     viewModel.nextFrame()
@@ -416,110 +418,154 @@ public struct SenderView: View {
                 }
                 .buttonStyle(.bordered)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 12)
             
-            // 전송 속도 (FPS) 슬라이더 바
-            HStack(spacing: 12) {
-                Image(systemName: "hare.fill")
-                    .foregroundStyle(.purple)
-                
-                Text("속도: \(Int(viewModel.fps)) FPS")
-                    .font(.caption.monospacedDigit().bold())
-                    .frame(width: 85, alignment: .leading)
-                
-                Slider(value: $viewModel.fps, in: 2.0...18.0, step: 1.0)
-                
-                Button("아이폰 17 초고속 (15 FPS)") {
-                    viewModel.fps = 15.0
+            // 🐢 거북이 ~ 🐇 토끼 FPS 속도 조절 슬라이더
+            VStack(spacing: 4) {
+                HStack(spacing: 10) {
+                    Image(systemName: "tortoise.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(.green)
+                    
+                    Slider(value: $viewModel.fps, in: 2.0...30.0, step: 1.0)
+                        .tint(.purple)
+                    
+                    Image(systemName: "hare.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(.purple)
+                    
+                    Text("\(Int(viewModel.fps)) FPS")
+                        .font(.system(.caption, design: .monospaced, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .frame(width: 50, alignment: .trailing)
                 }
-                .font(.caption2.bold())
-                .buttonStyle(.bordered)
+                .padding(.horizontal, 16)
+                
+                // 속도 프리셋 뱃지 버튼들 (1줄에 딱 맞춤)
+                HStack(spacing: 8) {
+                    speedPresetButton(fps: 6, title: "안정적 (6)")
+                    speedPresetButton(fps: 12, title: "표준 (12)")
+                    speedPresetButton(fps: 18, title: "고속 (18)")
+                    speedPresetButton(fps: 24, title: "아이폰17 (24)")
+                }
+                .padding(.horizontal, 12)
             }
-            .padding(.horizontal, 24)
             .padding(.vertical, 4)
             
-            // 가이드 문구 (중앙 정렬)
-            VStack(spacing: 4) {
-                HStack(spacing: 6) {
+            // 안내 문구
+            VStack(spacing: 2) {
+                HStack(spacing: 4) {
                     Image(systemName: "camera.viewfinder")
                         .foregroundStyle(.purple)
+                        .font(.caption)
                     #if os(macOS)
                     Text("아이폰 QRDrop 앱의 [받기] 카메라로 비추세요!")
-                        .font(.headline)
+                        .font(.subheadline.bold())
                     #else
                     Text("맥 QRDrop 앱의 [받기] 카메라로 비추세요!")
-                        .font(.headline)
+                        .font(.subheadline.bold())
                     #endif
                 }
-                Text("QRDrop 전용 고속 광학 스트림으로 사진/바이너리 파일이 무선 복원됩니다.")
-                    .font(.caption)
+                Text("실시간 QR 스트림으로 사진, PDF, PPT 등 모든 파일이 무선 복원됩니다.")
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 14)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 10)
         }
     }
     
-    // MARK: - 5. Drop Zone View
+    @ViewBuilder
+    private func speedPresetButton(fps: Double, title: String) -> some View {
+        let isSelected = Int(viewModel.fps) == Int(fps)
+        if isSelected {
+            Button {
+                viewModel.fps = fps
+            } label: {
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+            }
+            .buttonStyle(.borderedProminent)
+        } else {
+            Button {
+                viewModel.fps = fps
+            } label: {
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+            }
+            .buttonStyle(.bordered)
+        }
+    }
+    
+    // MARK: - 5. Drop Zone View (모든 파일 지원)
     
     private var dropZoneView: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             Spacer()
             
             ZStack {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(isDropTargeted ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06))
                 
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .strokeBorder(
                         isDropTargeted ? Color.accentColor : Color.secondary.opacity(0.3),
-                        style: StrokeStyle(lineWidth: isDropTargeted ? 3 : 2, dash: [10, 8])
+                        style: StrokeStyle(lineWidth: isDropTargeted ? 3 : 2, dash: [8, 6])
                     )
                 
-                VStack(spacing: 18) {
+                VStack(spacing: 14) {
                     ZStack {
                         Circle()
                             .fill(Color.accentColor.opacity(0.15))
-                            .frame(width: 84, height: 84)
+                            .frame(width: 72, height: 72)
                         
-                        Image(systemName: isDropTargeted ? "arrow.down.doc.fill" : "photo.on.rectangle.angled")
-                            .font(.system(size: 42))
+                        Image(systemName: isDropTargeted ? "arrow.down.doc.fill" : "doc.badge.plus")
+                            .font(.system(size: 36))
                             .foregroundStyle(Color.accentColor)
                             .scaleEffect(isDropTargeted ? 1.15 : 1.0)
                             .animation(.spring(response: 0.3), value: isDropTargeted)
                     }
                     
-                    VStack(spacing: 8) {
+                    VStack(spacing: 6) {
                         #if os(macOS)
-                        Text("아이폰으로 전송할 사진 또는 파일을 드롭하세요")
-                            .font(.title3.weight(.bold))
+                        Text("전송할 파일이나 사진을 드롭하세요")
+                            .font(.headline)
                             .multilineTextAlignment(.center)
                         
-                        Text("사진(JPG, PNG, HEIC), 문서, 코드(.swift, .py, .txt) 모두 지원\n고속 애니메이션 QR 스트림으로 수초 내에 전송됩니다.")
-                            .font(.subheadline)
+                        Text("사진, PDF, PPT, Word, Excel, 코드, 압축파일 등 모든 형식 지원\n초고속 광학 애니메이션 스트림으로 즉시 전송됩니다.")
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                         #else
-                        Text("맥(Mac)으로 전송할 사진 또는 파일을 선택하세요")
-                            .font(.title3.weight(.bold))
+                        Text("맥으로 보낼 파일이나 사진을 선택하세요")
+                            .font(.headline)
                             .multilineTextAlignment(.center)
                         
-                        Text("사진 보관함에서 사진을 선택하거나 문서를 전송할 수 있습니다.\n상대 기기 QRDrop 카메라로 비추면 바로 복원됩니다.")
-                            .font(.subheadline)
+                        Text("사진 보관함, PDF, PPT, 문서 등 모든 파일을 선택할 수 있습니다.\n맥 카메라로 비추면 바로 복원되어 저장됩니다.")
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                         #endif
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
                     
-                    HStack(spacing: 12) {
+                    // 파일 및 사진 선택 버튼들
+                    HStack(spacing: 10) {
                         #if canImport(PhotosUI)
                         PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                            Label("사진 선택...", systemImage: "photo.badge.plus")
-                                .font(.headline)
-                                .padding(.horizontal, 16)
+                            Label("사진 앨범", systemImage: "photo.badge.plus")
+                                .font(.caption.bold())
+                                .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
                         }
                         .buttonStyle(.borderedProminent)
@@ -528,9 +574,9 @@ public struct SenderView: View {
                         Button {
                             showFilePicker = true
                         } label: {
-                            Label("파일 찾아보기...", systemImage: "folder.badge.plus")
-                                .font(.headline)
-                                .padding(.horizontal, 16)
+                            Label("모든 파일...", systemImage: "folder.badge.plus")
+                                .font(.caption.bold())
+                                .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
                         }
                         #if canImport(PhotosUI)
@@ -542,43 +588,38 @@ public struct SenderView: View {
                         Button {
                             viewModel.loadSampleFile()
                         } label: {
-                            Label("샘플 파일", systemImage: "sparkles")
-                                .font(.headline)
-                                .padding(.horizontal, 14)
+                            Label("샘플", systemImage: "sparkles")
+                                .font(.caption.bold())
+                                .padding(.horizontal, 10)
                                 .padding(.vertical, 8)
                         }
                         .buttonStyle(.bordered)
                     }
                 }
-                .padding(32)
+                .padding(20)
             }
-            .frame(maxWidth: 580, minHeight: 300)
-            .padding(.horizontal, 24)
-            .onDrop(of: [.fileURL, .item, .data, .plainText, .utf8PlainText, .image], isTargeted: $isDropTargeted) { providers in
+            .frame(maxWidth: 560, minHeight: 250)
+            .padding(.horizontal, 14)
+            .onDrop(of: [.fileURL, .item, .content, .data, .plainText, .utf8PlainText, .image, .pdf], isTargeted: $isDropTargeted) { providers in
                 handleDroppedItems(providers)
             }
             
             if let error = viewModel.errorMessage {
                 Text(error)
-                    .font(.footnote)
+                    .font(.caption2)
                     .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
             
-            HStack(spacing: 14) {
-                #if os(macOS)
-                FeatureBadge(icon: "photo.fill", title: "사진 & 대용량", subtitle: "고속 QR 스트림")
-                FeatureBadge(icon: "wifi.slash", title: "100% 완전 오프라인", subtitle: "인터넷/블루투스 불필요")
-                FeatureBadge(icon: "hare.fill", title: "초고속 15+ FPS", subtitle: "아이폰 17 즉시 인식")
-                #else
-                FeatureBadge(icon: "photo.fill", title: "사진 앨범 연동", subtitle: "PhotosUI 완벽 지원")
-                FeatureBadge(icon: "laptopcomputer", title: "맥으로 원스톱 전송", subtitle: "QR 스트림 스캔")
-                FeatureBadge(icon: "shield.fill", title: "100% 에어갭 보안", subtitle: "망분리 환경 최적화")
-                #endif
+            // 하단 특징 배지 3개
+            HStack(spacing: 8) {
+                FeatureBadge(icon: "doc.fill", title: "모든 파일 지원", subtitle: "사진·PDF·PPT·ZIP")
+                FeatureBadge(icon: "wifi.slash", title: "100% 완전 오프라인", subtitle: "인터넷·블루투스 불필요")
+                FeatureBadge(icon: "hare.fill", title: "초당 최대 30 FPS", subtitle: "아이폰 17 광학 스트림")
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 16)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
             
             Spacer()
         }
@@ -633,7 +674,9 @@ public struct SenderView: View {
             return true
         }
         
-        if provider.hasItemConformingToTypeIdentifier(UTType.item.identifier) {
+        if provider.hasItemConformingToTypeIdentifier(UTType.item.identifier) ||
+            provider.hasItemConformingToTypeIdentifier(UTType.content.identifier) ||
+            provider.hasItemConformingToTypeIdentifier(UTType.data.identifier) {
             provider.loadItem(forTypeIdentifier: UTType.item.identifier, options: nil) { item, _ in
                 if let url = item as? URL {
                     Task { @MainActor in
@@ -641,7 +684,7 @@ public struct SenderView: View {
                     }
                 } else if let data = item as? Data {
                     Task { @MainActor in
-                        let name = provider.suggestedName ?? "전송_파일.txt"
+                        let name = provider.suggestedName ?? "전송_파일"
                         self.viewModel.prepareFile(name: name, data: data)
                     }
                 }
@@ -650,6 +693,25 @@ public struct SenderView: View {
         }
         
         return false
+    }
+    
+    private func fileIconName(for filename: String) -> String {
+        let lower = filename.lowercased()
+        if lower.hasSuffix(".pdf") {
+            return "doc.richtext.fill"
+        } else if lower.hasSuffix(".ppt") || lower.hasSuffix(".pptx") || lower.hasSuffix(".key") {
+            return "presentation.fill"
+        } else if lower.hasSuffix(".doc") || lower.hasSuffix(".docx") || lower.hasSuffix(".pages") {
+            return "doc.text.fill"
+        } else if lower.hasSuffix(".xls") || lower.hasSuffix(".xlsx") || lower.hasSuffix(".numbers") || lower.hasSuffix(".csv") {
+            return "tablecells.fill"
+        } else if lower.hasSuffix(".zip") || lower.hasSuffix(".tar") || lower.hasSuffix(".gz") {
+            return "archivebox.fill"
+        } else if lower.hasSuffix(".jpg") || lower.hasSuffix(".jpeg") || lower.hasSuffix(".png") || lower.hasSuffix(".heic") {
+            return "photo.fill"
+        } else {
+            return "doc.fill"
+        }
     }
 }
 
@@ -661,27 +723,27 @@ struct FeatureBadge: View {
     let subtitle: String
     
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 4) {
             Image(systemName: icon)
-                .font(.title2)
+                .font(.subheadline)
                 .foregroundStyle(.blue)
             
             Text(title)
-                .font(.footnote.weight(.semibold))
+                .font(.caption.weight(.bold))
                 .lineLimit(1)
-                .minimumScaleFactor(0.85)
+                .minimumScaleFactor(0.7)
                 .multilineTextAlignment(.center)
             
             Text(subtitle)
-                .font(.caption2)
+                .font(.system(size: 10))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.7)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, alignment: .center)
-        .padding(.vertical, 12)
-        .padding(.horizontal, 6)
-        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+        .padding(.vertical, 8)
+        .padding(.horizontal, 4)
+        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
     }
 }

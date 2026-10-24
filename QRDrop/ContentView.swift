@@ -57,8 +57,8 @@ public struct ContentView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
                 
                 Divider()
                 
