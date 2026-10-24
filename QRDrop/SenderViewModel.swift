@@ -1,3 +1,6 @@
+#if canImport(UIKit)
+import UIKit
+#endif
 import Foundation
 import SwiftUI
 import CoreGraphics
@@ -98,6 +101,10 @@ public final class SenderViewModel {
     public func pasteFromClipboard() {
         #if canImport(AppKit)
         if let clipboardString = NSPasteboard.general.string(forType: .string) {
+            self.directTextInput = clipboardString
+        }
+        #elseif canImport(UIKit)
+        if let clipboardString = UIPasteboard.general.string {
             self.directTextInput = clipboardString
         }
         #endif

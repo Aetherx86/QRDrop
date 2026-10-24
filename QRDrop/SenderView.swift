@@ -50,105 +50,126 @@ public struct SenderView: View {
     // MARK: - 1. 텍스트 직접 입력 뷰 (실시간 QR 생성)
     
     private var directTextInputView: some View {
-        HStack(spacing: 20) {
-            // 왼쪽: 텍스트 입력창 & 컨트롤
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Label("아이폰으로 보낼 텍스트 입력", systemImage: "pencil.line")
-                        .font(.headline)
-                    Spacer()
-                    Text("\(viewModel.directTextInput.count)자")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
+        ViewThatFits(in: .horizontal) {
+            // 가로가 넓은 Mac / iPad 화면: 좌우 배치
+            HStack(spacing: 20) {
+                textInputArea
+                    .frame(minWidth: 260)
+                    .padding(.leading, 20)
+                    .padding(.bottom, 16)
                 
-                TextEditor(text: $viewModel.directTextInput)
-                    .font(.system(.body, design: .monospaced))
-                    .padding(8)
-                    .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                    )
-                
-                // 퀵 액션 버튼
-                HStack(spacing: 8) {
-                    Button {
-                        viewModel.pasteFromClipboard()
-                    } label: {
-                        Label("클립보드 붙여넣기", systemImage: "doc.on.clipboard")
-                            .font(.caption)
-                    }
-                    .buttonStyle(.bordered)
-                    
-                    Button {
-                        viewModel.directTextInput = "https://"
-                    } label: {
-                        Label("링크(URL)", systemImage: "link")
-                            .font(.caption)
-                    }
-                    .buttonStyle(.bordered)
-                    
-                    Spacer()
-                    
-                    Button(role: .destructive) {
-                        viewModel.clearDirectText()
-                    } label: {
-                        Text("지우기")
-                            .font(.caption)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.red)
-                }
+                qrCodePreviewArea(maxSize: 320)
+                    .frame(width: 320)
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 16)
             }
-            .frame(minWidth: 260)
-            .padding(.leading, 20)
-            .padding(.bottom, 16)
             
-            // 오른쪽: 실시간 QR 코드
-            VStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(Color.white)
-                        .shadow(color: .black.opacity(0.12), radius: 14, x: 0, y: 6)
+            // 세로가 좁은 iPhone 화면: 상하 스크롤 배치
+            ScrollView {
+                VStack(spacing: 18) {
+                    qrCodePreviewArea(maxSize: 260)
+                        .frame(maxWidth: .infinity)
                     
-                    if let qr = viewModel.currentQRImage {
-                        Image(decorative: qr, scale: 1.0)
-                            .resizable()
-                            .interpolation(.none)
-                            .scaledToFit()
-                            .padding(18)
-                    } else {
-                        VStack(spacing: 8) {
-                            Image(systemName: "keyboard")
-                                .font(.system(size: 36))
-                                .foregroundStyle(.secondary)
-                            Text("왼쪽에 텍스트를 입력하면\nQR 코드가 실시간 생성됩니다")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding()
-                    }
+                    textInputArea
+                        .frame(minHeight: 180)
                 }
-                .frame(maxWidth: 320, maxHeight: 320)
-                
-                // 안내 뱃지
-                HStack(spacing: 6) {
-                    Image(systemName: "camera.fill")
-                        .foregroundStyle(.blue)
-                        .font(.caption)
-                    Text("아이폰 기본 카메라로 비추면 바로 텍스트 복사 가능!")
-                        .font(.caption2.bold())
-                        .foregroundStyle(.secondary)
-                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
             }
-            .frame(width: 320)
-            .padding(.trailing, 20)
-            .padding(.bottom, 16)
         }
     }
     
+    private var textInputArea: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("보낼 텍스트 입력", systemImage: "pencil.line")
+                    .font(.headline)
+                Spacer()
+                Text("\(viewModel.directTextInput.count)자")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            
+            TextEditor(text: $viewModel.directTextInput)
+                .font(.system(.body, design: .monospaced))
+                .padding(8)
+                .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                )
+            
+            // 퀵 액션 버튼
+            HStack(spacing: 8) {
+                Button {
+                    viewModel.pasteFromClipboard()
+                } label: {
+                    Label("붙여넣기", systemImage: "doc.on.clipboard")
+                        .font(.caption)
+                }
+                .buttonStyle(.bordered)
+                
+                Button {
+                    viewModel.directTextInput = "https://"
+                } label: {
+                    Label("링크(URL)", systemImage: "link")
+                        .font(.caption)
+                }
+                .buttonStyle(.bordered)
+                
+                Spacer()
+                
+                Button(role: .destructive) {
+                    viewModel.clearDirectText()
+                } label: {
+                    Text("지우기")
+                        .font(.caption)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.red)
+            }
+        }
+    }
+    
+    private func qrCodePreviewArea(maxSize: CGFloat) -> some View {
+        VStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.12), radius: 14, x: 0, y: 6)
+                
+                if let qr = viewModel.currentQRImage {
+                    Image(decorative: qr, scale: 1.0)
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .padding(18)
+                } else {
+                    VStack(spacing: 8) {
+                        Image(systemName: "keyboard")
+                            .font(.system(size: 36))
+                            .foregroundStyle(.secondary)
+                        Text("텍스트를 입력하면\nQR 코드가 실시간 생성됩니다")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
+                }
+            }
+            .frame(maxWidth: maxSize, maxHeight: maxSize)
+            
+            HStack(spacing: 6) {
+                Image(systemName: "camera.fill")
+                    .foregroundStyle(.blue)
+                    .font(.caption)
+                Text("카메라로 비추면 바로 인식되어 전송됩니다")
+                    .font(.caption2.bold())
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     // MARK: - 2. 파일 전송 모드 뷰
     
     private var fileTransferModeView: some View {
