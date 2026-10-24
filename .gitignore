@@ -1,0 +1,20 @@
+# Xcode
+.DS_Store
+*/build/*
+*.xcuserstate
+project.xcworkspace/xcuserdata/
+*.xcuserdatad/
+DerivedData/
+*.moved-aside
+*.ipa
+*.app.dSYM.zip
+*.dSYM
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# Code injection support
+iOSInjectionProject/
