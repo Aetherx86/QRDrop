@@ -54,7 +54,7 @@ public final class SenderViewModel {
     public var serializedStrings: [String] = []
     public var currentChunkIndex: Int = 0
     public var isPlaying: Bool = false
-    public var fps: Double = 12.0 {
+    public var fps: Double = 24.0 {
         didSet {
             if isPlaying {
                 startPlayback()
@@ -157,53 +157,7 @@ public final class SenderViewModel {
         selectedFileName = name
         originalFileSize = data.count
         
-        // 다중 인코딩 디코딩 시도
-        var detectedText: String?
-        let encodings: [String.Encoding] = [
-            .utf8,
-            String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.EUC_KR.rawValue))),
-            .utf16,
-            .ascii,
-            .isoLatin1
-        ]
-        
-        for enc in encodings {
-            if let str = String(data: data, encoding: enc) {
-                let nonPrintable = str.unicodeScalars.filter { !CharacterSet.alphanumerics.contains($0) && !CharacterSet.whitespacesAndNewlines.contains($0) && !CharacterSet.punctuationCharacters.contains($0) }.count
-                if Double(nonPrintable) / Double(max(1, str.count)) < 0.25 {
-                    detectedText = str
-                    break
-                }
-            }
-        }
-        
-        // 1. 텍스트 파일
-        if let text = detectedText {
-            isTextMode = true
-            fileTextContent = text
-            inputMode = .file
-            
-            let pageSize = 1500
-            var pages: [String] = []
-            var remaining = text[...]
-            while !remaining.isEmpty {
-                let chunk = remaining.prefix(pageSize)
-                pages.append(String(chunk))
-                remaining = remaining.dropFirst(pageSize)
-            }
-            if pages.isEmpty { pages.append(text) }
-            
-            self.textPages = pages
-            self.currentPageIndex = 0
-            self.updateTextPageQR()
-            self.isProcessingFile = false
-            if pages.count > 1 {
-                self.startAutoPage()
-            }
-            return
-        }
-        
-        // 2. 바이너리 파일 (사진, PDF 등)
+        // 모든 파일(PDF, PPT, 사진, 문서, 코드, 압축 등)은 초고속 바이너리 애니메이션 스트림으로 전송
         isTextMode = false
         fileTextContent = nil
         textPages = []

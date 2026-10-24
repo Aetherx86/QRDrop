@@ -201,11 +201,7 @@ public struct SenderView: View {
             if viewModel.selectedFileName == nil || viewModel.selectedFileName == "직접 입력 메모" {
                 dropZoneView
             } else {
-                if viewModel.isTextMode {
-                    textPageQRView
-                } else {
-                    binaryAnimationQRView
-                }
+                binaryAnimationQRView
             }
         }
     }
@@ -330,150 +326,151 @@ public struct SenderView: View {
     // MARK: - 4. 모든 파일(사진, PDF, PPT 등) 고속 애니메이션 스트림 뷰
     
     private var binaryAnimationQRView: some View {
-        VStack(spacing: 10) {
-            // 상단 파일 정보 헤더 바
-            HStack(spacing: 10) {
-                Image(systemName: fileIconName(for: viewModel.selectedFileName ?? ""))
-                    .font(.title3)
-                    .foregroundStyle(.purple)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(viewModel.selectedFileName ?? "파일")
-                        .font(.subheadline.bold())
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    
-                    Text("\(viewModel.formattedOriginalSize) • 총 \(viewModel.packets.count)개 프레임")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                
-                Spacer()
-                
-                Button {
-                    viewModel.stopPlayback()
-                    viewModel.selectedFileName = nil
-                    viewModel.currentQRImage = nil
-                } label: {
-                    Label("다른 파일", systemImage: "xmark.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-            .padding(.horizontal, 12)
-            
-            Spacer(minLength: 2)
-            
-            // 고속 QR 코드 디스플레이 영역
-            ZStack {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.12), radius: 14, x: 0, y: 6)
-                
-                if let qr = viewModel.currentQRImage {
-                    Image(decorative: qr, scale: 1.0)
-                        .resizable()
-                        .interpolation(.none)
-                        .scaledToFit()
-                        .padding(18)
-                } else {
-                    ProgressView()
-                }
-            }
-            .frame(maxWidth: 340, maxHeight: 340)
-            
-            Spacer(minLength: 2)
-            
-            // 프레임 이동 및 재생 토글 바
-            HStack(spacing: 12) {
-                Button {
-                    viewModel.previousFrame()
-                } label: {
-                    Image(systemName: "chevron.left")
-                }
-                .buttonStyle(.bordered)
-                
-                Button {
-                    viewModel.togglePlayback()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                        Text(viewModel.isPlaying ? "자동 전송 중" : "일시 정지")
-                    }
-                    .font(.caption.bold())
-                }
-                .buttonStyle(.borderedProminent)
-                
-                Text("\(viewModel.currentChunkIndex + 1) / \(max(1, viewModel.packets.count))")
-                    .font(.system(.caption, design: .monospaced, weight: .bold))
-                
-                Button {
-                    viewModel.nextFrame()
-                } label: {
-                    Image(systemName: "chevron.right")
-                }
-                .buttonStyle(.bordered)
-            }
-            .padding(.horizontal, 12)
-            
-            // 🐢 거북이 ~ 🐇 토끼 FPS 속도 조절 슬라이더
-            VStack(spacing: 4) {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 8) {
+                // 상단 파일 정보 헤더 바
                 HStack(spacing: 10) {
-                    Image(systemName: "tortoise.fill")
-                        .font(.subheadline)
-                        .foregroundStyle(.green)
-                    
-                    Slider(value: $viewModel.fps, in: 2.0...60.0, step: 1.0)
-                        .tint(.purple)
-                    
-                    Image(systemName: "hare.fill")
-                        .font(.subheadline)
+                    Image(systemName: fileIconName(for: viewModel.selectedFileName ?? ""))
+                        .font(.title3)
                         .foregroundStyle(.purple)
                     
-                    Text("\(Int(viewModel.fps)) FPS")
-                        .font(.system(.caption, design: .monospaced, weight: .bold))
-                        .foregroundStyle(.primary)
-                        .frame(width: 50, alignment: .trailing)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(viewModel.selectedFileName ?? "파일")
+                            .font(.subheadline.bold())
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        
+                        Text("\(viewModel.formattedOriginalSize) • 총 \(viewModel.packets.count)개 프레임 • \(Int(viewModel.fps)) FPS 자동 전송")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Button {
+                        viewModel.stopPlayback()
+                        viewModel.selectedFileName = nil
+                        viewModel.currentQRImage = nil
+                    } label: {
+                        Label("다른 파일", systemImage: "xmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 12)
                 
-                // 속도 프리셋 뱃지 버튼들 (1줄에 딱 맞춤)
-                HStack(spacing: 6) {
-                    speedPresetButton(fps: 12, title: "표준 (12)")
-                    speedPresetButton(fps: 24, title: "고속 (24)")
-                    speedPresetButton(fps: 36, title: "아이폰17 (36)")
-                    speedPresetButton(fps: 60, title: "초고속 60 FPS")
+                // 고속 QR 코드 디스플레이 영역 (모바일 화면에 맞춰 280x280으로 최적화)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(Color.white)
+                        .shadow(color: .black.opacity(0.12), radius: 14, x: 0, y: 6)
+                    
+                    if let qr = viewModel.currentQRImage {
+                        Image(decorative: qr, scale: 1.0)
+                            .resizable()
+                            .interpolation(.none)
+                            .scaledToFit()
+                            .padding(14)
+                    } else {
+                        ProgressView()
+                    }
+                }
+                .frame(maxWidth: 280, maxHeight: 280)
+                
+                // 프레임 이동 및 재생 토글 바
+                HStack(spacing: 12) {
+                    Button {
+                        viewModel.previousFrame()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                    }
+                    .buttonStyle(.bordered)
+                    
+                    Button {
+                        viewModel.togglePlayback()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
+                            Text(viewModel.isPlaying ? "자동 전송 중" : "일시 정지")
+                        }
+                        .font(.caption.bold())
+                    }
+                    .buttonStyle(.borderedProminent)
+                    
+                    Text("\(viewModel.currentChunkIndex + 1) / \(max(1, viewModel.packets.count))")
+                        .font(.system(.caption, design: .monospaced, weight: .bold))
+                    
+                    Button {
+                        viewModel.nextFrame()
+                    } label: {
+                        Image(systemName: "chevron.right")
+                    }
+                    .buttonStyle(.bordered)
                 }
                 .padding(.horizontal, 12)
-            }
-            .padding(.vertical, 4)
-            
-            // 안내 문구
-            VStack(spacing: 2) {
-                HStack(spacing: 4) {
-                    Image(systemName: "camera.viewfinder")
-                        .foregroundStyle(.purple)
-                        .font(.caption)
-                    #if os(macOS)
-                    Text("아이폰 QRDrop 앱의 [받기] 카메라로 비추세요!")
-                        .font(.subheadline.bold())
-                    #else
-                    Text("맥 QRDrop 앱의 [받기] 카메라로 비추세요!")
-                        .font(.subheadline.bold())
-                    #endif
+                
+                // 🐢 거북이 ~ 🐇 토끼 FPS 속도 조절 전용 컨트롤 패널
+                VStack(spacing: 8) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "tortoise.fill")
+                            .font(.title3)
+                            .foregroundStyle(.green)
+                        
+                        Slider(value: $viewModel.fps, in: 2.0...60.0, step: 1.0)
+                            .tint(.purple)
+                        
+                        Image(systemName: "hare.fill")
+                            .font(.title3)
+                            .foregroundStyle(.purple)
+                        
+                        Text("\(Int(viewModel.fps)) FPS")
+                            .font(.system(.subheadline, design: .monospaced, weight: .black))
+                            .foregroundStyle(.purple)
+                            .frame(width: 58, alignment: .trailing)
+                    }
+                    .padding(.horizontal, 12)
+                    
+                    // 속도 프리셋 뱃지 버튼들 (1줄 맞춤)
+                    HStack(spacing: 6) {
+                        speedPresetButton(fps: 12, title: "12 FPS")
+                        speedPresetButton(fps: 24, title: "24 FPS")
+                        speedPresetButton(fps: 36, title: "36 FPS")
+                        speedPresetButton(fps: 60, title: "60 FPS ⚡️")
+                    }
+                    .padding(.horizontal, 8)
                 }
-                Text("실시간 QR 스트림으로 사진, PDF, PPT 등 모든 파일이 무선 복원됩니다.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                .padding(.vertical, 8)
+                .background(Color.purple.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+                .padding(.horizontal, 12)
+                
+                // 하단 안내 문구
+                VStack(spacing: 2) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "camera.viewfinder")
+                            .foregroundStyle(.purple)
+                            .font(.caption)
+                        #if os(macOS)
+                        Text("아이폰 QRDrop 앱의 [받기] 카메라로 비추세요!")
+                            .font(.subheadline.bold())
+                        #else
+                        Text("맥 QRDrop 앱의 [받기] 카메라로 비추세요!")
+                            .font(.subheadline.bold())
+                        #endif
+                    }
+                    Text("실시간 QR 스트림으로 사진, PDF, PPT 등 모든 파일이 무선 복원됩니다.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal, 12)
+                .padding(.top, 4)
             }
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.horizontal, 12)
-            .padding(.bottom, 10)
+            .padding(.bottom, 16)
         }
     }
     
@@ -485,7 +482,7 @@ public struct SenderView: View {
                 viewModel.fps = fps
             } label: {
                 Text(title)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 11, weight: .bold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .padding(.horizontal, 6)
@@ -497,7 +494,7 @@ public struct SenderView: View {
                 viewModel.fps = fps
             } label: {
                 Text(title)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 11, weight: .medium))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .padding(.horizontal, 6)
