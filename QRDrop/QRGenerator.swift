@@ -29,6 +29,24 @@ public final class QRGenerator {
     }
     
     /// 텍스트로부터 고화질 흑백 QR 코드 CGImage 생성
+    /// 백그라운드 스레드에서 병렬 생성 가능한 초고속 QR 생성 메서드
+    public nonisolated static func makeQRCode(from string: String, targetSize: CGFloat = 512) -> CGImage? {
+        guard let data = string.data(using: .utf8) else { return nil }
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = data
+        filter.correctionLevel = "M"
+        
+        guard let outputCI = filter.outputImage else { return nil }
+        let extent = outputCI.extent
+        guard extent.width > 0, extent.height > 0 else { return nil }
+        
+        let scale = targetSize / extent.width
+        let transformed = outputCI.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+        
+        let sharedContext = CIContext(options: [.useSoftwareRenderer: false])
+        return sharedContext.createCGImage(transformed, from: transformed.extent)
+    }
+
     public func generateQRCode(from string: String, targetSize: CGFloat = 512) -> CGImage? {
         let cacheKey = "\(string.hashValue)_\(Int(targetSize))" as NSString
         if let cached = imageCache.object(forKey: cacheKey) {

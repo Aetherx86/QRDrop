@@ -434,11 +434,11 @@ public struct SenderView: View {
                     }
                     .padding(.horizontal, 12)
                     
-                    // 속도 프리셋 뱃지 버튼들 (1줄 맞춤)
+                    // 속도 프리셋 뱃지 버튼들 (1줄 맞춤, 30 FPS 고정 추가)
                     HStack(spacing: 6) {
-                        speedPresetButton(fps: 12, title: "12 FPS")
-                        speedPresetButton(fps: 24, title: "24 FPS")
-                        speedPresetButton(fps: 36, title: "36 FPS")
+                        speedPresetButton(fps: 15, title: "15 FPS")
+                        speedPresetButton(fps: 30, title: "30 FPS 고정")
+                        speedPresetButton(fps: 45, title: "45 FPS")
                         speedPresetButton(fps: 60, title: "60 FPS ⚡️")
                     }
                     .padding(.horizontal, 8)
@@ -555,6 +555,37 @@ public struct SenderView: View {
                         #endif
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
+                    
+                    // 전송 속도 퀵 설정 패널 (파일 선택 전에도 30 FPS 고정 등 설정 가능)
+                    VStack(spacing: 6) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "tortoise.fill")
+                                .font(.caption)
+                                .foregroundStyle(.green)
+                            
+                            Slider(value: $viewModel.fps, in: 2.0...60.0, step: 1.0)
+                                .tint(.purple)
+                            
+                            Image(systemName: "hare.fill")
+                                .font(.caption)
+                                .foregroundStyle(.purple)
+                            
+                            Text("\(Int(viewModel.fps)) FPS")
+                                .font(.system(.caption, design: .monospaced, weight: .black))
+                                .foregroundStyle(.purple)
+                                .frame(width: 52, alignment: .trailing)
+                        }
+                        
+                        HStack(spacing: 6) {
+                            speedPresetButton(fps: 15, title: "15 FPS")
+                            speedPresetButton(fps: 30, title: "30 FPS 고정")
+                            speedPresetButton(fps: 45, title: "45 FPS")
+                            speedPresetButton(fps: 60, title: "60 FPS ⚡️")
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(Color.purple.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
                     
                     // 파일 및 사진 선택 버튼들
                     HStack(spacing: 10) {
