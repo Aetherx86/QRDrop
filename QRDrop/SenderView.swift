@@ -39,7 +39,7 @@ public struct SenderView: View {
         }
         .fileImporter(
             isPresented: $showFilePicker,
-            allowedContentTypes: [.item, .content, .data, .image, .pdf],
+            allowedContentTypes: [.item, .content, .data, .image, .pdf, .movie, .video, .quickTimeMovie, .mpeg4Movie],
             allowsMultipleSelection: false
         ) { result in
             switch result {
@@ -53,11 +53,15 @@ public struct SenderView: View {
         }
         #if canImport(PhotosUI)
         .onChange(of: selectedPhotoItem) { _, newItem in
+            guard let item = newItem else { return }
             Task {
-                if let item = newItem,
-                   let data = try? await item.loadTransferable(type: Data.self) {
+                if let data = try? await item.loadTransferable(type: Data.self) {
+                    let isVideo = item.supportedContentTypes.contains(where: { $0.conforms(to: .movie) || $0.conforms(to: .video) })
+                    let ext = isVideo ? "mp4" : "jpg"
+                    let prefix = isVideo ? "동영상" : "사진"
+                    let name = "\(prefix)_\(Int(Date().timeIntervalSince1970)).\(ext)"
                     await MainActor.run {
-                        self.viewModel.prepareFile(name: "사진_\(Int(Date().timeIntervalSince1970)).jpg", data: data)
+                        self.viewModel.prepareFile(name: name, data: data)
                     }
                 }
             }
@@ -590,8 +594,8 @@ public struct SenderView: View {
                     // 파일 및 사진 선택 버튼들
                     HStack(spacing: 10) {
                         #if canImport(PhotosUI)
-                        PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                            Label("사진 앨범", systemImage: "photo.badge.plus")
+                        PhotosPicker(selection: $selectedPhotoItem, matching: .any(of: [.images, .videos])) {
+                            Label("사진/영상 앨범", systemImage: "photo.badge.plus")
                                 .font(.caption.bold())
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
@@ -628,7 +632,7 @@ public struct SenderView: View {
             }
             .frame(maxWidth: 560, minHeight: 250)
             .padding(.horizontal, 14)
-            .onDrop(of: [.fileURL, .item, .content, .data, .plainText, .utf8PlainText, .image, .pdf], isTargeted: $isDropTargeted) { providers in
+            .onDrop(of: [.fileURL, .item, .content, .data, .plainText, .utf8PlainText, .image, .pdf, .movie, .video, .quickTimeMovie, .mpeg4Movie], isTargeted: $isDropTargeted) { providers in
                 handleDroppedItems(providers)
             }
             
@@ -642,7 +646,7 @@ public struct SenderView: View {
             
             // 하단 특징 배지 3개
             HStack(spacing: 8) {
-                FeatureBadge(icon: "doc.fill", title: "모든 파일 지원", subtitle: "사진·PDF·PPT·ZIP")
+                FeatureBadge(icon: "film.stack.fill", title: "영상·모든 파일 지원", subtitle: "동영상·사진·PDF·PPT")
                 FeatureBadge(icon: "wifi.slash", title: "100% 완전 오프라인", subtitle: "인터넷·블루투스 불필요")
                 FeatureBadge(icon: "hare.fill", title: "초당 최대 60 FPS", subtitle: "아이폰 17 초고속 스트림")
             }
@@ -725,7 +729,9 @@ public struct SenderView: View {
     
     private func fileIconName(for filename: String) -> String {
         let lower = filename.lowercased()
-        if lower.hasSuffix(".pdf") {
+        if lower.hasSuffix(".mp4") || lower.hasSuffix(".mov") || lower.hasSuffix(".m4v") || lower.hasSuffix(".avi") || lower.hasSuffix(".webm") {
+            return "film.fill"
+        } else if lower.hasSuffix(".pdf") {
             return "doc.richtext.fill"
         } else if lower.hasSuffix(".ppt") || lower.hasSuffix(".pptx") || lower.hasSuffix(".key") {
             return "presentation.fill"

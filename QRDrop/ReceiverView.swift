@@ -1,5 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import AVKit
+import Photos
 
 #if canImport(AppKit)
 import AppKit
@@ -305,9 +307,16 @@ struct CompletedFileSheet: View {
         }
     }
     
+    private var isVideoFile: Bool {
+        let lower = file.name.lowercased()
+        return lower.hasSuffix(".mp4") || lower.hasSuffix(".mov") || lower.hasSuffix(".m4v") || lower.hasSuffix(".avi")
+    }
+
     @ViewBuilder
     private var previewSection: some View {
-        if let stringContent = String(data: file.data, encoding: .utf8), !stringContent.isEmpty {
+        if isVideoFile {
+            videoPreviewSection
+        } else if let stringContent = String(data: file.data, encoding: .utf8), !stringContent.isEmpty, !file.name.lowercased().hasSuffix(".pdf") {
             VStack(alignment: .leading, spacing: 6) {
                 Text("미리보기")
                     .font(.caption.bold())
@@ -324,6 +333,24 @@ struct CompletedFileSheet: View {
             }
         } else {
             imagePreviewSection
+        }
+    }
+    
+    @ViewBuilder
+    private var videoPreviewSection: some View {
+        let url = fileShareData()
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("동영상 미리보기")
+                    .font(.caption.bold())
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Image(systemName: "film.fill")
+                    .foregroundStyle(.purple)
+            }
+            VideoPlayer(player: AVPlayer(url: url))
+                .frame(height: 160)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
     
@@ -373,7 +400,29 @@ struct CompletedFileSheet: View {
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(file.name)
         do {
             try file.data.write(to: tempURL)
-            saveSuccessMessage = "공유 버튼을 통해 파일 앱이나 사진첩에 저장할 수 있습니다."
+            if isVideoFile {
+                PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
+                    if status == .authorized || status == .limited {
+                        PHPhotoLibrary.shared().performChanges {
+                            PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: tempURL)
+                        } completionHandler: { success, error in
+                            DispatchQueue.main.async {
+                                if success {
+                                    saveSuccessMessage = "동영상이 사진 보관함(앨범)에 저장되었습니다!"
+                                } else {
+                                    saveSuccessMessage = "앨범 저장 실패: \(error?.localizedDescription ?? "알 수 없음")"
+                                }
+                            }
+                        }
+                    } else {
+                        DispatchQueue.main.async {
+                            saveSuccessMessage = "공유 버튼을 통해 파일 앱이나 다른 앱으로 저장하세요."
+                        }
+                    }
+                }
+            } else {
+                saveSuccessMessage = "공유 버튼을 통해 파일 앱이나 사진첩에 저장할 수 있습니다."
+            }
         } catch {
             saveSuccessMessage = "저장 실패: \(error.localizedDescription)"
         }
