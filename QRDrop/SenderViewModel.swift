@@ -54,7 +54,7 @@ public final class SenderViewModel {
     public var serializedStrings: [String] = []
     public var currentChunkIndex: Int = 0
     public var isPlaying: Bool = false
-    public var fps: Double = 6.0
+    public var fps: Double = 12.0
     public var loopCount: Int = 0
     
     private var playbackTask: Task<Void, Never>?
@@ -197,23 +197,66 @@ public final class SenderViewModel {
             return
         }
         
-        // 2. 바이너리 파일
+        // 2. 바이너리 파일 (사진, PDF 등)
         isTextMode = false
         fileTextContent = nil
         textPages = []
         inputMode = .file
         
-        Task.detached(priority: .userInitiated) { [weak self] in
+        // 사진/이미지 파일인 경우 최적화 압축 (해상도 리사이징 및 JPEG 압축)
+        var fileDataToTransfer = data
+        let lowerName = name.lowercased()
+        if lowerName.hasSuffix(".jpg") || lowerName.hasSuffix(".jpeg") || lowerName.hasSuffix(".png") || lowerName.hasSuffix(".heic") {
+            #if canImport(UIKit)
+            if let image = UIImage(data: data) {
+                let maxDimension: CGFloat = 1000
+                var targetSize = image.size
+                if max(targetSize.width, targetSize.height) > maxDimension {
+                    let scale = maxDimension / max(targetSize.width, targetSize.height)
+                    targetSize = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
+                    let renderer = UIGraphicsImageRenderer(size: targetSize)
+                    let resized = renderer.image { _ in
+                        image.draw(in: CGRect(origin: .zero, size: targetSize))
+                    }
+                    if let compressed = resized.jpegData(compressionQuality: 0.6) {
+                        fileDataToTransfer = compressed
+                    }
+                } else if let compressed = image.jpegData(compressionQuality: 0.65) {
+                    fileDataToTransfer = compressed
+                }
+            }
+            #elseif canImport(AppKit)
+            if let nsImage = NSImage(data: data) {
+                let maxDimension: CGFloat = 1000
+                var targetSize = nsImage.size
+                if max(targetSize.width, targetSize.height) > maxDimension {
+                    let scale = maxDimension / max(targetSize.width, targetSize.height)
+                    targetSize = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
+                    let newImage = NSImage(size: targetSize)
+                    newImage.lockFocus()
+                    nsImage.draw(in: NSRect(origin: .zero, size: targetSize))
+                    newImage.unlockFocus()
+                    if let tiff = newImage.tiffRepresentation,
+                       let rep = NSBitmapImageRep(data: tiff),
+                       let compressed = rep.representation(using: .jpeg, properties: [.compressionFactor: 0.6]) {
+                        fileDataToTransfer = compressed
+                    }
+                }
+            }
+            #endif
+        }
+
+        Task.detached(priority: .userInitiated) { [weak self, fileDataToTransfer] in
             guard let self else { return }
-            let originalSize = data.count
-            let compressedData = DataCompressor.compress(data)
+            let originalSize = fileDataToTransfer.count
+            let compressedData = DataCompressor.compress(fileDataToTransfer)
             let sha256 = DataCompressor.sha256Prefix(for: compressedData)
             let fileID = UUID().uuidString.prefix(6).lowercased()
             
             var generatedPackets: [TransferPacket] = []
             var generatedStrings: [String] = []
             
-            let chunkSize = 300
+            let chunkSize = 450
             let totalChunks = max(1, Int(ceil(Double(compressedData.count) / Double(chunkSize))))
             
             for index in 0..<totalChunks {

@@ -1,11 +1,17 @@
 import SwiftUI
 import UniformTypeIdentifiers
+#if canImport(PhotosUI)
+import PhotosUI
+#endif
 
 public struct SenderView: View {
     @Bindable var viewModel: SenderViewModel
     
     @State private var isDropTargeted: Bool = false
     @State private var showFilePicker: Bool = false
+    #if canImport(PhotosUI)
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    #endif
     
     public init(viewModel: SenderViewModel) {
         self.viewModel = viewModel
@@ -13,7 +19,7 @@ public struct SenderView: View {
     
     public var body: some View {
         VStack(spacing: 0) {
-            // 상단 모드 선택 (텍스트 직접 입력 vs 파일 드롭 전송)
+            // 상단 모드 선택 (텍스트 직접 입력 vs 파일/사진 드롭 전송)
             Picker("입력 방식", selection: $viewModel.inputMode) {
                 ForEach(SenderViewModel.InputMode.allCases) { mode in
                     Text(mode.rawValue).tag(mode)
@@ -33,7 +39,7 @@ public struct SenderView: View {
         }
         .fileImporter(
             isPresented: $showFilePicker,
-            allowedContentTypes: [.item],
+            allowedContentTypes: [.item, .image, .data],
             allowsMultipleSelection: false
         ) { result in
             switch result {
@@ -45,6 +51,18 @@ public struct SenderView: View {
                 viewModel.errorMessage = "파일 선택 실패: \(error.localizedDescription)"
             }
         }
+        #if canImport(PhotosUI)
+        .onChange(of: selectedPhotoItem) { _, newItem in
+            Task {
+                if let item = newItem,
+                   let data = try? await item.loadTransferable(type: Data.self) {
+                    await MainActor.run {
+                        self.viewModel.prepareFile(name: "사진_\(Int(Date().timeIntervalSince1970)).jpg", data: data)
+                    }
+                }
+            }
+        }
+        #endif
     }
     
     // MARK: - 1. 텍스트 직접 입력 뷰 (실시간 QR 생성)
@@ -163,9 +181,15 @@ public struct SenderView: View {
                 Image(systemName: "camera.fill")
                     .foregroundStyle(.blue)
                     .font(.caption)
-                Text("카메라로 비추면 바로 인식되어 전송됩니다")
+                #if os(macOS)
+                Text("아이폰 카메라로 비추면 즉시 복사됩니다")
                     .font(.caption2.bold())
                     .foregroundStyle(.secondary)
+                #else
+                Text("맥 카메라로 비추면 즉시 복사됩니다")
+                    .font(.caption2.bold())
+                    .foregroundStyle(.secondary)
+                #endif
             }
         }
     }
@@ -180,7 +204,7 @@ public struct SenderView: View {
                 if viewModel.isTextMode {
                     textPageQRView
                 } else {
-                    binaryFileNoticeView
+                    binaryAnimationQRView
                 }
             }
         }
@@ -199,6 +223,7 @@ public struct SenderView: View {
                     Text(viewModel.selectedFileName ?? "파일")
                         .font(.headline)
                         .lineLimit(1)
+                        .truncationMode(.middle)
                     
                     Text("\(viewModel.formattedOriginalSize) • 기본 카메라로 즉시 복사")
                         .font(.caption)
@@ -208,6 +233,7 @@ public struct SenderView: View {
                 Spacer()
                 
                 Button {
+                    viewModel.stopAutoPage()
                     viewModel.selectedFileName = nil
                     viewModel.currentQRImage = nil
                 } label: {
@@ -280,33 +306,42 @@ public struct SenderView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "camera.fill")
                         .foregroundStyle(.blue)
-                    Text("아이폰 기본 카메라를 켜서 비추세요!")
+                    #if os(macOS)
+                    Text("아이폰 카메라를 켜서 비추세요!")
                         .font(.headline)
+                    #else
+                    Text("맥 카메라를 켜서 비추세요!")
+                        .font(.headline)
+                    #endif
                 }
                 Text("노란 박스 또는 우측 하단 [복사] 버튼을 누르면 내용이 바로 복사됩니다.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
+            .frame(maxWidth: .infinity, alignment: .center)
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
         }
     }
     
-    // MARK: - 4. 바이너리 파일 안내 뷰
+    // MARK: - 4. 바이너리 파일/사진 고속 애니메이션 스트림 뷰
     
-    private var binaryFileNoticeView: some View {
-        VStack(spacing: 20) {
+    private var binaryAnimationQRView: some View {
+        VStack(spacing: 12) {
+            // 상단 파일 정보 헤더
             HStack(spacing: 12) {
-                Image(systemName: "exclamationmark.triangle.fill")
+                Image(systemName: "photo.stack.fill")
                     .font(.title2)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.purple)
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(viewModel.selectedFileName ?? "파일")
                         .font(.headline)
                         .lineLimit(1)
+                        .truncationMode(.middle)
                     
-                    Text("\(viewModel.formattedOriginalSize) • 바이너리 파일")
+                    Text("\(viewModel.formattedOriginalSize) • 고속 전송 중 (\(viewModel.packets.count)개 프레임)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -316,6 +351,7 @@ public struct SenderView: View {
                 Button {
                     viewModel.stopPlayback()
                     viewModel.selectedFileName = nil
+                    viewModel.currentQRImage = nil
                 } label: {
                     Label("다른 파일", systemImage: "xmark.circle.fill")
                         .font(.subheadline)
@@ -328,53 +364,108 @@ public struct SenderView: View {
             .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
             .padding(.horizontal, 20)
             
-            Spacer()
+            Spacer(minLength: 4)
             
-            VStack(spacing: 16) {
-                Image(systemName: "camera.badge.ellipsis")
-                    .font(.system(size: 56))
-                    .foregroundStyle(.secondary)
+            // 고속 QR 코드 디스플레이 영역
+            ZStack {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.12), radius: 18, x: 0, y: 8)
                 
-                Text("바이너리 파일 (사진, PDF, 압축파일)")
-                    .font(.title3.bold())
+                if let qr = viewModel.currentQRImage {
+                    Image(decorative: qr, scale: 1.0)
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .padding(22)
+                } else {
+                    ProgressView()
+                }
+            }
+            .frame(maxWidth: 380, maxHeight: 380)
+            
+            Spacer(minLength: 4)
+            
+            // 재생 컨트롤 및 프레임 표시부
+            HStack(spacing: 14) {
+                Button {
+                    viewModel.previousFrame()
+                } label: {
+                    Image(systemName: "chevron.left")
+                }
+                .buttonStyle(.bordered)
                 
-                Text("사진이나 PDF 같은 바이너리 파일은 텍스트가 아니기 때문에,\n아이폰 '기본 카메라'로는 파일 포맷을 복원할 수 없습니다.\n(기본 카메라는 텍스트, 웹링크, 연락처 등만 인식 가능합니다)")
-                    .font(.subheadline)
+                Button {
+                    viewModel.togglePlayback()
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
+                        Text(viewModel.isPlaying ? "재생 중" : "정지")
+                    }
+                    .font(.subheadline.bold())
+                }
+                .buttonStyle(.borderedProminent)
+                
+                Text("\(viewModel.currentChunkIndex + 1) / \(max(1, viewModel.packets.count)) 프레임")
+                    .font(.system(.subheadline, design: .monospaced, weight: .bold))
+                
+                Button {
+                    viewModel.nextFrame()
+                } label: {
+                    Image(systemName: "chevron.right")
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding(.horizontal, 20)
+            
+            // 전송 속도 (FPS) 슬라이더 바
+            HStack(spacing: 12) {
+                Image(systemName: "hare.fill")
+                    .foregroundStyle(.purple)
+                
+                Text("속도: \(Int(viewModel.fps)) FPS")
+                    .font(.caption.monospacedDigit().bold())
+                    .frame(width: 85, alignment: .leading)
+                
+                Slider(value: $viewModel.fps, in: 2.0...18.0, step: 1.0)
+                
+                Button("아이폰 17 초고속 (15 FPS)") {
+                    viewModel.fps = 15.0
+                }
+                .font(.caption2.bold())
+                .buttonStyle(.bordered)
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 4)
+            
+            // 가이드 문구 (중앙 정렬)
+            VStack(spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: "camera.viewfinder")
+                        .foregroundStyle(.purple)
+                    #if os(macOS)
+                    Text("아이폰 QRDrop 앱의 [받기] 카메라로 비추세요!")
+                        .font(.headline)
+                    #else
+                    Text("맥 QRDrop 앱의 [받기] 카메라로 비추세요!")
+                        .font(.headline)
+                    #endif
+                }
+                Text("QRDrop 전용 고속 광학 스트림으로 사진/바이너리 파일이 무선 복원됩니다.")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 30)
-                
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("💡 기본 카메라로 바로 전송 가능한 형식:")
-                        .font(.caption.bold())
-                    Text("• 상단의 [✍️ 텍스트 직접 입력] 탭에서 원하는 메모/링크 입력")
-                        .font(.caption2)
-                    Text("• 텍스트 파일 (.txt, .md, .swift, .py, .csv, .json 등)")
-                        .font(.caption2)
-                }
-                .padding(14)
-                .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
             }
-            
-            Spacer()
-            
-            Button {
-                viewModel.selectedFileName = nil
-            } label: {
-                Text("텍스트/코드 파일 드롭하러 가기")
-                    .font(.headline)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 10)
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(.bottom, 24)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 14)
         }
     }
     
     // MARK: - 5. Drop Zone View
     
     private var dropZoneView: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             Spacer()
             
             ZStack {
@@ -387,30 +478,53 @@ public struct SenderView: View {
                         style: StrokeStyle(lineWidth: isDropTargeted ? 3 : 2, dash: [10, 8])
                     )
                 
-                VStack(spacing: 20) {
+                VStack(spacing: 18) {
                     ZStack {
                         Circle()
                             .fill(Color.accentColor.opacity(0.15))
-                            .frame(width: 88, height: 88)
+                            .frame(width: 84, height: 84)
                         
-                        Image(systemName: isDropTargeted ? "arrow.down.doc.fill" : "doc.text.fill")
-                            .font(.system(size: 46))
+                        Image(systemName: isDropTargeted ? "arrow.down.doc.fill" : "photo.on.rectangle.angled")
+                            .font(.system(size: 42))
                             .foregroundStyle(Color.accentColor)
                             .scaleEffect(isDropTargeted ? 1.15 : 1.0)
                             .animation(.spring(response: 0.3), value: isDropTargeted)
                     }
                     
                     VStack(spacing: 8) {
-                        Text("맥에서 전송할 텍스트/코드/문서를 드롭하세요")
+                        #if os(macOS)
+                        Text("아이폰으로 전송할 사진 또는 파일을 드롭하세요")
                             .font(.title3.weight(.bold))
+                            .multilineTextAlignment(.center)
                         
-                        Text(".txt, .md, .swift, .py, .json, .csv 등\n아이폰 기본 카메라로 비추면 바로 텍스트로 인식되어 복사됩니다.")
+                        Text("사진(JPG, PNG, HEIC), 문서, 코드(.swift, .py, .txt) 모두 지원\n고속 애니메이션 QR 스트림으로 수초 내에 전송됩니다.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
+                        #else
+                        Text("맥(Mac)으로 전송할 사진 또는 파일을 선택하세요")
+                            .font(.title3.weight(.bold))
+                            .multilineTextAlignment(.center)
+                        
+                        Text("사진 보관함에서 사진을 선택하거나 문서를 전송할 수 있습니다.\n상대 기기 QRDrop 카메라로 비추면 바로 복원됩니다.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                        #endif
                     }
+                    .frame(maxWidth: .infinity, alignment: .center)
                     
                     HStack(spacing: 12) {
+                        #if canImport(PhotosUI)
+                        PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                            Label("사진 선택...", systemImage: "photo.badge.plus")
+                                .font(.headline)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        #endif
+                        
                         Button {
                             showFilePicker = true
                         } label: {
@@ -419,12 +533,16 @@ public struct SenderView: View {
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
                         }
+                        #if canImport(PhotosUI)
+                        .buttonStyle(.bordered)
+                        #else
                         .buttonStyle(.borderedProminent)
+                        #endif
                         
                         Button {
                             viewModel.loadSampleFile()
                         } label: {
-                            Label("샘플 파일로 시연", systemImage: "sparkles")
+                            Label("샘플 파일", systemImage: "sparkles")
                                 .font(.headline)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 8)
@@ -432,11 +550,11 @@ public struct SenderView: View {
                         .buttonStyle(.bordered)
                     }
                 }
-                .padding(36)
+                .padding(32)
             }
-            .frame(maxWidth: 580, minHeight: 320)
+            .frame(maxWidth: 580, minHeight: 300)
             .padding(.horizontal, 24)
-            .onDrop(of: [.fileURL, .item, .data, .plainText, .utf8PlainText], isTargeted: $isDropTargeted) { providers in
+            .onDrop(of: [.fileURL, .item, .data, .plainText, .utf8PlainText, .image], isTargeted: $isDropTargeted) { providers in
                 handleDroppedItems(providers)
             }
             
@@ -444,13 +562,20 @@ public struct SenderView: View {
                 Text(error)
                     .font(.footnote)
                     .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
             
-            HStack(spacing: 16) {
-                FeatureBadge(icon: "camera.fill", title: "수신 엔진 불필요", subtitle: "아이폰 기본 카메라로 즉시 인식")
-                FeatureBadge(icon: "wifi.slash", title: "100% 완전 오프라인", subtitle: "인터넷/블루투스 전혀 불필요")
-                FeatureBadge(icon: "doc.on.clipboard.fill", title: "원클릭 복사", subtitle: "메모장/클립보드 즉시 사용")
+            HStack(spacing: 14) {
+                #if os(macOS)
+                FeatureBadge(icon: "photo.fill", title: "사진 & 대용량", subtitle: "고속 QR 스트림")
+                FeatureBadge(icon: "wifi.slash", title: "100% 완전 오프라인", subtitle: "인터넷/블루투스 불필요")
+                FeatureBadge(icon: "hare.fill", title: "초고속 15+ FPS", subtitle: "아이폰 17 즉시 인식")
+                #else
+                FeatureBadge(icon: "photo.fill", title: "사진 앨범 연동", subtitle: "PhotosUI 완벽 지원")
+                FeatureBadge(icon: "laptopcomputer", title: "맥으로 원스톱 전송", subtitle: "QR 스트림 스캔")
+                FeatureBadge(icon: "shield.fill", title: "100% 에어갭 보안", subtitle: "망분리 환경 최적화")
+                #endif
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 16)
@@ -476,6 +601,22 @@ public struct SenderView: View {
                 if let url = targetURL {
                     Task { @MainActor in
                         self.viewModel.processFile(at: url)
+                    }
+                }
+            }
+            return true
+        }
+        
+        if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
+            provider.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { item, _ in
+                if let url = item as? URL {
+                    Task { @MainActor in
+                        self.viewModel.processFile(at: url)
+                    }
+                } else if let data = item as? Data {
+                    Task { @MainActor in
+                        let name = provider.suggestedName ?? "드롭된_사진.jpg"
+                        self.viewModel.prepareFile(name: name, data: data)
                     }
                 }
             }
@@ -527,15 +668,20 @@ struct FeatureBadge: View {
             
             Text(title)
                 .font(.footnote.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .multilineTextAlignment(.center)
             
             Text(subtitle)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .center)
         .padding(.vertical, 12)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 6)
         .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
     }
 }

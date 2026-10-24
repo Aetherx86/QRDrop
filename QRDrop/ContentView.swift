@@ -1,16 +1,35 @@
 import SwiftUI
 
 public enum TransferMode: String, CaseIterable, Identifiable {
-    case sender = "보내기 (QR 생성)"
-    case receiver = "받기 (카메라 스캔)"
+    case sender
+    case receiver
     
-    public var id: String { rawValue }
+    public var id: String {
+        switch self {
+        case .sender: return "sender"
+        case .receiver: return "receiver"
+        }
+    }
     
     public var icon: String {
         switch self {
         case .sender: return "qrcode"
         case .receiver: return "camera.viewfinder"
         }
+    }
+    
+    public var title: String {
+        #if os(macOS)
+        switch self {
+        case .sender: return "폰으로 보내기"
+        case .receiver: return "폰에서 받기"
+        }
+        #else
+        switch self {
+        case .sender: return "맥으로 보내기"
+        case .receiver: return "맥에서 받기"
+        }
+        #endif
     }
 }
 
@@ -33,7 +52,7 @@ public struct ContentView: View {
                 // 상단 모드 세그먼트 스위처
                 Picker("모드", selection: $selectedMode) {
                     ForEach(TransferMode.allCases) { mode in
-                        Label(mode.rawValue, systemImage: mode.icon)
+                        Label(mode.title, systemImage: mode.icon)
                             .tag(mode)
                     }
                 }

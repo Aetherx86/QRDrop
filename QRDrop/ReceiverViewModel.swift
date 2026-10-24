@@ -28,7 +28,11 @@ public final class ReceiverViewModel {
     // 완료된 파일
     public var completedFile: TransferredFileInfo?
     public var showCompletionSheet: Bool = false
+    #if os(macOS)
+    public var statusMessage: String = "카메라를 아이폰 화면의 QR 코드에 비춰주세요"
+#else
     public var statusMessage: String = "카메라를 맥 화면의 QR 코드에 비춰주세요"
+#endif
     public var errorMessage: String?
     
     // FPS 계산용 카운터
@@ -176,7 +180,11 @@ public final class ReceiverViewModel {
         transferStartTime = nil
         completedFile = nil
         errorMessage = nil
+        #if os(macOS)
+        statusMessage = "카메라를 아이폰 화면의 QR 코드에 비춰주세요"
+#else
         statusMessage = "카메라를 맥 화면의 QR 코드에 비춰주세요"
+#endif
     }
     
     private func recordScanEvent() {
