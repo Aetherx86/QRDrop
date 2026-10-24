@@ -40,6 +40,9 @@ public final class SenderViewModel {
     public var textPages: [String] = []
     public var currentPageIndex: Int = 0
     public var isTextMode: Bool = true
+    public var isAutoPagePlaying: Bool = true
+    public var autoPageInterval: Double = 1.8
+    private var autoPageTask: Task<Void, Never>?
     
     // QR 생성 이미지
     public var currentQRImage: CGImage?
@@ -188,6 +191,9 @@ public final class SenderViewModel {
             self.currentPageIndex = 0
             self.updateTextPageQR()
             self.isProcessingFile = false
+            if pages.count > 1 {
+                self.startAutoPage()
+            }
             return
         }
         
@@ -243,18 +249,58 @@ public final class SenderViewModel {
         self.startPlayback()
     }
     
-    // MARK: - 텍스트 페이지 이동
+    // MARK: - 텍스트 페이지 자동 넘김 및 수동 이동
     
     public func nextPage() {
-        guard currentPageIndex < textPages.count - 1 else { return }
-        currentPageIndex += 1
+        guard !textPages.isEmpty else { return }
+        if currentPageIndex < textPages.count - 1 {
+            currentPageIndex += 1
+        } else {
+            currentPageIndex = 0 // 순환 재생
+        }
         updateTextPageQR()
     }
     
     public func previousPage() {
-        guard currentPageIndex > 0 else { return }
-        currentPageIndex -= 1
+        guard !textPages.isEmpty else { return }
+        if currentPageIndex > 0 {
+            currentPageIndex -= 1
+        } else {
+            currentPageIndex = textPages.count - 1
+        }
         updateTextPageQR()
+    }
+    
+    public func toggleAutoPage() {
+        if isAutoPagePlaying {
+            stopAutoPage()
+        } else {
+            startAutoPage()
+        }
+    }
+    
+    public func startAutoPage() {
+        guard textPages.count > 1 else { return }
+        stopAutoPage()
+        isAutoPagePlaying = true
+        
+        autoPageTask = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self else { break }
+                let interval = max(0.8, self.autoPageInterval)
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+                if Task.isCancelled { break }
+                await MainActor.run {
+                    self.nextPage()
+                }
+            }
+        }
+    }
+    
+    public func stopAutoPage() {
+        isAutoPagePlaying = false
+        autoPageTask?.cancel()
+        autoPageTask = nil
     }
     
     private func updateTextPageQR() {

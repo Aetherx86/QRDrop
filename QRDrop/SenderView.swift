@@ -244,13 +244,24 @@ public struct SenderView: View {
             Spacer(minLength: 4)
             
             if viewModel.totalPages > 1 {
-                HStack(spacing: 16) {
+                HStack(spacing: 14) {
                     Button {
                         viewModel.previousPage()
                     } label: {
-                        Label("이전 페이지", systemImage: "chevron.left")
+                        Image(systemName: "chevron.left")
                     }
-                    .disabled(viewModel.currentPageIndex == 0)
+                    .buttonStyle(.bordered)
+                    
+                    Button {
+                        viewModel.toggleAutoPage()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: viewModel.isAutoPagePlaying ? "pause.fill" : "play.fill")
+                            Text(viewModel.isAutoPagePlaying ? "자동 넘김 중" : "일시 정지")
+                        }
+                        .font(.subheadline.bold())
+                    }
+                    .buttonStyle(.borderedProminent)
                     
                     Text("\(viewModel.currentPageIndex + 1) / \(viewModel.totalPages) 페이지")
                         .font(.system(.subheadline, design: .monospaced, weight: .bold))
@@ -258,9 +269,9 @@ public struct SenderView: View {
                     Button {
                         viewModel.nextPage()
                     } label: {
-                        Label("다음 페이지", systemImage: "chevron.right")
+                        Image(systemName: "chevron.right")
                     }
-                    .disabled(viewModel.currentPageIndex >= viewModel.totalPages - 1)
+                    .buttonStyle(.bordered)
                 }
                 .padding(.horizontal, 20)
             }

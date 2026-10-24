@@ -306,8 +306,15 @@ final class MacCameraContainerView: NSView, AVCaptureVideoDataOutputSampleBuffer
         captureSession.beginConfiguration()
         captureSession.sessionPreset = .high
         
-        guard let device = AVCaptureDevice.default(for: .video),
-              let input = try? AVCaptureDeviceInput(device: device),
+        let discovery = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInWideAngleCamera, .externalUnknown],
+            mediaType: .video,
+            position: .unspecified
+        )
+        let device = discovery.devices.first ?? AVCaptureDevice.default(for: .video)
+        
+        guard let validDevice = device,
+              let input = try? AVCaptureDeviceInput(device: validDevice),
               captureSession.canAddInput(input) else {
             captureSession.commitConfiguration()
             return
@@ -326,6 +333,8 @@ final class MacCameraContainerView: NSView, AVCaptureVideoDataOutputSampleBuffer
         let layer = AVCaptureVideoPreviewLayer(session: captureSession)
         layer.videoGravity = .resizeAspectFill
         layer.frame = bounds
+        layer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+        self.wantsLayer = true
         self.layer?.addSublayer(layer)
         self.previewLayer = layer
         
