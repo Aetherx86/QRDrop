@@ -427,7 +427,7 @@ public struct SenderView: View {
                         .font(.subheadline)
                         .foregroundStyle(.green)
                     
-                    Slider(value: $viewModel.fps, in: 2.0...30.0, step: 1.0)
+                    Slider(value: $viewModel.fps, in: 2.0...60.0, step: 1.0)
                         .tint(.purple)
                     
                     Image(systemName: "hare.fill")
@@ -442,11 +442,11 @@ public struct SenderView: View {
                 .padding(.horizontal, 16)
                 
                 // 속도 프리셋 뱃지 버튼들 (1줄에 딱 맞춤)
-                HStack(spacing: 8) {
-                    speedPresetButton(fps: 6, title: "안정적 (6)")
+                HStack(spacing: 6) {
                     speedPresetButton(fps: 12, title: "표준 (12)")
-                    speedPresetButton(fps: 18, title: "고속 (18)")
-                    speedPresetButton(fps: 24, title: "아이폰17 (24)")
+                    speedPresetButton(fps: 24, title: "고속 (24)")
+                    speedPresetButton(fps: 36, title: "아이폰17 (36)")
+                    speedPresetButton(fps: 60, title: "초고속 60 FPS")
                 }
                 .padding(.horizontal, 12)
             }
@@ -616,7 +616,7 @@ public struct SenderView: View {
             HStack(spacing: 8) {
                 FeatureBadge(icon: "doc.fill", title: "모든 파일 지원", subtitle: "사진·PDF·PPT·ZIP")
                 FeatureBadge(icon: "wifi.slash", title: "100% 완전 오프라인", subtitle: "인터넷·블루투스 불필요")
-                FeatureBadge(icon: "hare.fill", title: "초당 최대 30 FPS", subtitle: "아이폰 17 광학 스트림")
+                FeatureBadge(icon: "hare.fill", title: "초당 최대 60 FPS", subtitle: "아이폰 17 초고속 스트림")
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 12)

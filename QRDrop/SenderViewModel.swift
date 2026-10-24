@@ -296,6 +296,13 @@ public final class SenderViewModel {
         
         self.updateCurrentQRImage()
         self.startPlayback()
+        
+        // 60 FPS 등 초고속 전송 시 프레임 드랍이 없도록 백그라운드에서 전체 청크 QR 캐시 미리 렌더링
+        Task { @MainActor in
+            for str in strings {
+                _ = QRGenerator.shared.generateQRCode(from: str, targetSize: 650)
+            }
+        }
     }
     
     // MARK: - 텍스트 페이지 자동 넘김 및 수동 이동
