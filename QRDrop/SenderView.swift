@@ -443,7 +443,7 @@ public struct SenderView: View {
                         speedPresetButton(fps: 15, title: "15 FPS")
                         speedPresetButton(fps: 30, title: "30 FPS 고정")
                         speedPresetButton(fps: 45, title: "45 FPS")
-                        speedPresetButton(fps: 60, title: "60 FPS ⚡️")
+                        speedPresetButton(fps: 60, title: "60 FPS ⚡")
                     }
                     .padding(.horizontal, 8)
                 }
@@ -584,7 +584,7 @@ public struct SenderView: View {
                             speedPresetButton(fps: 15, title: "15 FPS")
                             speedPresetButton(fps: 30, title: "30 FPS 고정")
                             speedPresetButton(fps: 45, title: "45 FPS")
-                            speedPresetButton(fps: 60, title: "60 FPS ⚡️")
+                            speedPresetButton(fps: 60, title: "60 FPS ⚡")
                         }
                     }
                     .padding(.horizontal, 10)

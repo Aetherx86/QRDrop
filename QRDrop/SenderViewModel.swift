@@ -14,7 +14,7 @@ import AppKit
 public final class SenderViewModel {
     // MARK: - Input Mode
     public enum InputMode: String, CaseIterable, Identifiable {
-        case text = "✍️ 텍스트 직접 입력"
+        case text = "✍ 텍스트 직접 입력"
         case file = "📁 파일 드롭 전송"
         
         public var id: String { rawValue }
