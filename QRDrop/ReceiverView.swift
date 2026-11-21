@@ -90,7 +90,7 @@ public struct ReceiverView: View {
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
                             
-                            Text("\(viewModel.formattedOriginalSize) • 총 \(viewModel.totalChunks)개 프레임")
+                            Text("\(viewModel.formattedOriginalSize) | 총 \(viewModel.totalChunks)개 프레임")
                                 .font(.caption2)
                                 .foregroundStyle(.white.opacity(0.8))
                         }

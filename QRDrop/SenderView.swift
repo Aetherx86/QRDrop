@@ -226,7 +226,7 @@ public struct SenderView: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                     
-                    Text("\(viewModel.formattedOriginalSize) • 텍스트 모드")
+                    Text("\(viewModel.formattedOriginalSize) | 텍스트 모드")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -344,7 +344,7 @@ public struct SenderView: View {
                             .lineLimit(1)
                             .truncationMode(.middle)
                         
-                        Text("\(viewModel.formattedOriginalSize) • 총 \(viewModel.packets.count)개 프레임 • \(Int(viewModel.fps)) FPS 자동 전송")
+                        Text("\(viewModel.formattedOriginalSize) | 총 \(viewModel.packets.count)개 프레임 | \(Int(viewModel.fps)) FPS 자동 전송")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -417,7 +417,7 @@ public struct SenderView: View {
                 }
                 .padding(.horizontal, 12)
                 
-                // 🐢 거북이 ~ 🐇 토끼 FPS 속도 조절 전용 컨트롤 패널
+                // FPS 속도 조절 전용 컨트롤 패널
                 VStack(spacing: 8) {
                     HStack(spacing: 10) {
                         Image(systemName: "tortoise.fill")
@@ -443,7 +443,7 @@ public struct SenderView: View {
                         speedPresetButton(fps: 15, title: "15 FPS")
                         speedPresetButton(fps: 30, title: "30 FPS 고정")
                         speedPresetButton(fps: 45, title: "45 FPS")
-                        speedPresetButton(fps: 60, title: "60 FPS ⚡")
+                        speedPresetButton(fps: 60, title: "60 FPS")
                     }
                     .padding(.horizontal, 8)
                 }
@@ -584,7 +584,7 @@ public struct SenderView: View {
                             speedPresetButton(fps: 15, title: "15 FPS")
                             speedPresetButton(fps: 30, title: "30 FPS 고정")
                             speedPresetButton(fps: 45, title: "45 FPS")
-                            speedPresetButton(fps: 60, title: "60 FPS ⚡")
+                            speedPresetButton(fps: 60, title: "60 FPS")
                         }
                     }
                     .padding(.horizontal, 10)

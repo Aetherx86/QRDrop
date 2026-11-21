@@ -14,8 +14,8 @@ import AppKit
 public final class SenderViewModel {
     // MARK: - Input Mode
     public enum InputMode: String, CaseIterable, Identifiable {
-        case text = "✍ 텍스트 직접 입력"
-        case file = "📁 파일 드롭 전송"
+        case text = "텍스트 직접 입력"
+        case file = "파일 드롭 전송"
         
         public var id: String { rawValue }
     }
@@ -67,7 +67,7 @@ public final class SenderViewModel {
     private var playbackTask: Task<Void, Never>?
     
     public init() {
-        directTextInput = "안녕하세요! 맥(Mac)에서 입력한 텍스트가 아이폰 카메라로 즉시 전송되었습니다. 🚀"
+        directTextInput = "안녕하세요! 맥(Mac)에서 입력한 텍스트가 아이폰 카메라로 즉시 전송되었습니다."
         handleDirectTextChange()
     }
     
@@ -404,8 +404,8 @@ public final class SenderViewModel {
         수신 엔진이나 별도 앱 설치 없이,
         아이폰 기본 카메라만으로 100% 수신되었습니다.
         
-        • 전송 시간: \(Date().formatted())
-        • 파일 형식: 순수 텍스트 오프라인 전송
+        - 전송 시간: \(Date().formatted())
+        - 파일 형식: 순수 텍스트 오프라인 전송
         
         노란색 텍스트 박스 또는 우측 하단 [복사] 버튼을 누르면 바로 메모장 등에 붙여넣기 하실 수 있습니다!
         """

@@ -100,7 +100,7 @@ public struct ContentView: View {
         selectedMode = .receiver
         
         let sampleData = """
-        🎉 축하합니다! QRDrop 오프라인 파일 전송이 성공했습니다.
+        축하합니다! QRDrop 오프라인 파일 전송이 성공했습니다.
         
         - 파일명: offline_secret_doc.txt
         - 전송 방식: 고속 애니메이션 QR 광학 시퀀스
