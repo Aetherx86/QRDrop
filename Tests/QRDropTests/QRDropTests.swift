@@ -333,7 +333,7 @@ final class QRDropTests: XCTestCase {
     }
 
     func testURIPayloadAndInspectorClassification() throws {
-        let httpsURI = try URIPayload(rawValue: "https://github.com/Aetherx86/QRDrop")
+        let httpsURI = try URIPayload(rawValue: "https://github.com/omakasekim/QRDrop")
         XCTAssertEqual(httpsURI.scheme, "https")
 
         XCTAssertThrowsError(try URIPayload(rawValue: "javascript:alert(1)")) { err in
